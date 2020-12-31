@@ -11,7 +11,6 @@ def run():
     server, port = params['internal_ip'].split(':')
     topics = params['topics'].split(',')
     from_begin = params['from_begin']
-    print(server, port)
     pros = []
     for topic in topics:
         read_path = "/tmp/"+topic+"_in"
@@ -19,13 +18,11 @@ def run():
             os.remove(read_path)
         
         # os.mkfifo(read_path)
-        cmd = "docker run -e KAFAK_SERVER="+server+ \
+        cmd = "docker run -e KAFKA_SERVER="+server+ \
             " -e KAFKA_SERVER_PORT="+port+ \
             " -e KAFKA_CONSUMER_TOPIC="+topic+ \
-            " -e KAFKA_CONSUMER_FROME_BEGINNING="+from_begin+ \
             " --name consumer_"+topic+ \
             " registry.cn-shanghai.aliyuncs.com/wangxb/kafka-consumer:v1"
-        print(cmd)
         cmd = cmd.split(' ')
         p = subprocess.Popen(cmd)
         pros.append(p)
