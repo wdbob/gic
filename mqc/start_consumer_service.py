@@ -11,7 +11,7 @@ def run():
     server, port = params['internal_ip'].split(':')
     topics = params['topics'].split(',')
     from_begin = params['from_begin']
-    print(topics)
+    print(server, port)
     pros = []
     for topic in topics:
         read_path = "/tmp/"+topic+"_in"
@@ -32,7 +32,7 @@ def run():
     while True:
         for p in pros:
             print(p.stdout)
-        time.sleep(1)
+        time.sleep(10)
 
 
 if __name__ == "__main__":
