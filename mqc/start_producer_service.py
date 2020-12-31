@@ -7,7 +7,7 @@ def run():
     with open(json_fn, 'r') as f:
         params = json.load(f)
 
-    cmd = "sudo docker run -v /tmp:/tmp -e KAFKA_BROKER_SERVER="+params['external_ip']+" -e KAFKA_TOPICS="+params['topics']+" --name producer wangziling100/kafka:producer"
+    cmd = "sudo docker run -v /tmp:/tmp -e KAFKA_BROKER_SERVER="+params['external_ip']+" -e KAFKA_TOPICS="+params['topics']+" --name producer registry.cn-shanghai.aliyuncs.com/wangxb/kafka-producer:v1"
     cmd = cmd.split(' ')
     subprocess.Popen(cmd)
 

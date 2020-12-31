@@ -1,0 +1,11 @@
+{
+    "username": "你",
+    "git_url": "你的项目",
+    "entrypoint": "执行入口",
+    "email": "你的邮箱，可以把结果发到你邮箱, null忽略",
+    "output": "代码输出，null忽略",
+    "calculator_ip": "算力的ip",
+    "account": "你在算力上的账户",
+    "password": "你在算力上的密码",
+    "log": "你的log的位置"
+}
