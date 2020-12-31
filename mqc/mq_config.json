@@ -1,7 +1,0 @@
-{
-    "topics": "你的topics，用逗号分开",
-    "external_ip": "服务器外网ip",
-    "internal_ip": "服务器内网ip",
-    "zookeeper_ip": "localhost"
-    
-}
