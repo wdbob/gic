@@ -22,9 +22,10 @@ def run():
     # set job
     try:
         f = os.open(write_path, os.O_WRONLY)
-        os.write(f, message)
+        os.write(f, message.encode())
         os.close(f)
-    except:
+    except Exception as e:
+        print(e)
         os.close(f)
 
 
