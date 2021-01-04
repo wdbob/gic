@@ -20,6 +20,7 @@ def run():
         subprocess.call(cmd, shell=True)
     processor = Processor()
     pros = {}
+
     for topic in topics:
         cmd = "docker run -e KAFKA_SERVER="+server+ \
             " -e KAFKA_SERVER_PORT="+port+ \
@@ -29,6 +30,7 @@ def run():
         cmd = cmd.split(' ')
         p = subprocess.Popen(cmd)
         pros[topic] = p
+
     while True:
         for p in pros:
             if (p=='jobs'):

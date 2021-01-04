@@ -18,6 +18,7 @@ class Processor:
         sub = u'来自GPU集群管理系统的消息'
         ret = []
         if msg is None:
+            print('message is None')
             return []
         else:
             tmp = msg.split('\n')
