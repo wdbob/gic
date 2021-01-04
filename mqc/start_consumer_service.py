@@ -36,8 +36,7 @@ def run():
             if (p=='jobs'):
                 output = pros[p].stdout
                 if output is not None:
-                    msg = json.dumps(pros[p].stdout)
-                    processor.process(msg)
+                    processor.process(output)
             elif(p=='status'):
                 pass
         time.sleep(10)
