@@ -3,7 +3,7 @@ import os
 import subprocess
 import time
 
-from .job_processor import Processor
+from job_processor import Processor
 
 def run():
     json_fn = os.path.join(os.path.dirname(__file__), 'mq_config.json') 

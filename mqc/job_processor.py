@@ -56,7 +56,7 @@ class Processor:
         pass
 
     def process(self, msg):
-        self.jobs = self._parse(message)
+        self.jobs = self._parse(msg)
 
     def _start_calculator(self):
         pass
