@@ -21,6 +21,7 @@ class Processor:
             return []
         else:
             tmp = msg.split('\n')
+            print('tmp:', tmp)
             for m in tmp:
                 try:
                     job = self._get_job_info(m)
@@ -57,6 +58,7 @@ class Processor:
 
     def process(self, msg):
         self.jobs = self._parse(msg)
+        print('jobs:', self.jobs)
 
     def _start_calculator(self):
         pass

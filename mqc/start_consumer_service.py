@@ -32,9 +32,10 @@ def run():
     while True:
         for p in pros:
             if (p=='jobs'):
-                print(pros[p].stdout)
-                msg = json.dumps(pros[p].stdout)
-                processor.process(msg)
+                output = pros[p].stdout
+                if output is not None:
+                    msg = json.dumps(pros[p].stdout)
+                    processor.process(msg)
             elif(p=='status'):
                 pass
         time.sleep(10)
