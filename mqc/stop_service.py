@@ -19,6 +19,10 @@ def run():
     subprocess.call(cmd, shell=True)
     cmd = 'docker rm consumer'
     subprocess.call(cmd, shell=True)
+    cmd = 'docker stop producer-command'
+    subprocess.call(cmd, shell=True)
+    cmd = 'docker rm producer-command'
+    subprocess.call(cmd, shell=True)
 
 if __name__ == "__main__":
     run()

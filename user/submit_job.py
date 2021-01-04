@@ -12,7 +12,7 @@ def run():
     if not os.path.exists(write_path):
         raise "Please start your producer service first"
     argv = ArgumentParser(usage='submit_job [-f job配置文件]', description='提交任务工具')
-    argv.add_argument('-f', default='./job_format.json', type=str, help='job配置文件')
+    argv.add_argument('-f', default=os.path.join(os.path.dirname(__file__), './job_format.json'), type=str, help='job配置文件')
     args = argv.parse_args()
     json_fn = args.f
     with open(json_fn, 'r') as f:

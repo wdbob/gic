@@ -18,7 +18,7 @@ def run():
     subprocess.Popen(cmd)
     time.sleep(20)
 
-    cmd = cmd = "docker run -v /tmp:/tmp --restart=always -e KAFKA_BROKER_SERVER="+params['external_ip']+" -e KAFKA_TOPICS=command --name producer-command registry.cn-shanghai.aliyuncs.com/wangxb/kafka-producer:v1"
+    cmd = cmd = "docker run -v /tmp:/tmp --restart=always -e KAFKA_BROKER_SERVER="+params['internal_ip']+" -e KAFKA_TOPICS=command --name producer-command registry.cn-shanghai.aliyuncs.com/wangxb/kafka-producer:v1"
     cmd = cmd.split(' ')
     subprocess.Popen(cmd)
 

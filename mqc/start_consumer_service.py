@@ -13,6 +13,10 @@ def run():
     from_begin = params['from_begin']
     pros = {}
     for topic in topics:
+        cmd = "docker stop consumer_"+topic
+        subprocess.call(cmd, shell=True)
+        cmd = "docker rm consumer_"+topic
+        subprocess.call(cmd, shell=True)
         cmd = "docker run -e KAFKA_SERVER="+server+ \
             " -e KAFKA_SERVER_PORT="+port+ \
             " -e KAFKA_CONSUMER_TOPIC="+topic+ \
