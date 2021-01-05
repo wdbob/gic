@@ -48,7 +48,8 @@ class InstanceController:
             try: 
                 req = models.StopInstancesRequest()
                 params = {
-                    "InstanceIds": [self.instance]
+                    "InstanceIds": [self.instance],
+                    "StoppedMode": "STOP_CHARGING"
                 }
                 req.from_json_string(json.dumps(params))
                 resp = self.client.StopInstances(req) 

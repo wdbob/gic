@@ -28,7 +28,7 @@ def run():
             " --name consumer_"+topic+ \
             " registry.cn-shanghai.aliyuncs.com/wangxb/kafka-consumer:v1"
         cmd = cmd.split(' ')
-        p = subprocess.Popen(cmd)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         pros[topic] = p
 
     while True:
@@ -36,7 +36,9 @@ def run():
             if (p=='jobs'):
                 output = pros[p].stdout
                 if output is not None:
-                    processor.process(output)
+                    for line in output.readlines():
+                        if line is not None:
+                            processor.process(line)
             elif(p=='status'):
                 pass
         time.sleep(10)
