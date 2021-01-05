@@ -36,7 +36,8 @@ def run():
             if (p=='jobs'):
                 output = pros[p].stdout
                 print('jobs here')
-                for line in output.readlines():
+                for line in iter(output.readline, ''):
+                    line = bytes.decode(line)
                     print(line)
                     if line is not None:
                         processor.process(line)
