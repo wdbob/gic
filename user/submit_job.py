@@ -18,6 +18,7 @@ def run():
     with open(json_fn, 'r') as f:
         params = json.load(f)
     message = json.dumps(params)
+    message += '\n'
 
     # set job
     try:

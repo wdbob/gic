@@ -1,0 +1,1 @@
+origin/bin/kafka-console-producer.sh --topic $KAFKA_TOPICS --bootstrap-server $KAFKA_BROKER_SERVER
