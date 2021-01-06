@@ -1,1 +1,0 @@
-sudo docker run -v /tmp:/tmp -e KAFKA_BROKER_SERVER=118.89.115.57:9092 -e KAFKA_TOPICS=test --name producer wangziling100/kafka:producer
