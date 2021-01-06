@@ -8,7 +8,6 @@ def my_handler(signum, frame):
     stop = True
 
 def run():
-    # 设置相应信号处理的handler
     signal.signal(signal.SIGINT, my_handler)
     signal.signal(signal.SIGHUP, my_handler)
     signal.signal(signal.SIGTERM, my_handler)
@@ -28,14 +27,19 @@ def run():
     cmd1 = cmd1.split(' ')
     p1 = subprocess.Popen(cmd1, stdout=subprocess.PIPE)
     cmd2 = "/usr/origin/bin/kafka-console-producer.sh --topic "+topic+" --bootstrap-server "+broker_server
+    print(cmd2)
     cmd2 = cmd2.split(' ')
     p2 = subprocess.Popen(cmd2, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print('wait for starting producer.')
+    time.sleep(10)
+    print('start to receive messages.')
     while True:
-        time.sleep(1)
         if stop:
             os.remove(write_path)
             break
 
+        #for line in p1.stdout.readlines():
+            #print(line)
         p1_output = p1.stdout.readlines()
         p2.stdin.writelines(p1_output)
         p2.stdin.flush()
