@@ -29,14 +29,13 @@ class Processor:
             for m in tmp:
                 if(m==''): continue
                 try:
-                    job = self._get_job_info(m)
-                    if job is not None :
-                        if self._is_intact(job):
-                            ret.append(job)
-                            if 'email' in job.keys():
-                                send_email(job['email'], sub, self.params, 'submit_succeed', job['job_name'])
-                        elif 'email' in job.keys():
-                            send_email(job['email'], sub, self.params, 'submit_failure', job['job_name'])
+                    job = Job(m)
+                    if job.is_valid():
+                        ret.append(job)
+                        if job.has_email():
+                            send_email(job.email, sub, self.params, 'submit_succeed', job.name)
+                    elif job.has_email():
+                        send_email(job.email, sub, self.params, 'submit_failure', job.name)
                 except Exception as e:
                     print('读取job配置信息失败!', e)
                     break
@@ -51,22 +50,92 @@ class Processor:
             'git_url', 
             'entrypoint',
             'calculator_ip',
-            'account',
-            'password',
+            'key',
+            'secret',
+            'instance_id',
         ]
         for key in required_keys:
             if key not in job_info.keys():
                 return False
         return True
 
-    def _start(self):
-        pass
+    def _write_command(self, job):
+        write_path = '/tmp/command_out'
+        #global job_id
+        if os.path.exists(write_path):
+            #job['job_id'] = job_id
+            message = json.dumps(job)
+            message += '\n'
+            # set job
+            try:
+                f = os.open(write_path, os.O_WRONLY)
+                os.write(f, message.encode())
+                os.close(f)
+            except Exception as e:
+                print(e)
+                os.close(f)
 
+        else:
+            print("主题为command的生产者服务没有启动，请先启动生产者服务")
+        
     def process(self, msg):
         self.jobs = self._parse(msg)
+        for job in self.jobs:
+            self._write_command(job)
 
     def _start_calculator(self):
         pass
+
+class Job:
+    def __init__(self, info_str, info=None):
+        self.job = self._get_job_info(info_str)
+        if info is not None:
+            self.job = info
+
+    def _get_job_info(self, info_str):
+        try:
+            info = json.loads(info_str)
+        except:
+            info = None
+        return info
+
+    def _is_intact(self, job_info):
+        required_keys = ['username', 
+            'git_url', 
+            'entrypoint',
+            'calculator_ip',
+            'key',
+            'secret',
+            'instance_id',
+        ]
+        for key in required_keys:
+            if key not in job_info.keys():
+                return False
+        return True
+    
+    def is_valid(self):
+        if self.job is None:
+            return False
+        return self._is_intact(self.job)
+    
+    def has_email(self):
+        if 'email' in self.job.keys():
+            return True
+        return False
+
+    @property
+    def email(self):
+        try:
+            return self.job['email']
+        except:
+            return None
+
+    @property
+    def name(self):
+        try:
+            return self.job['job_name']
+        except:
+            return None
 
 def send_email(email, subject, params, content='submit_failure', job_name=""):
     #发送邮箱  
