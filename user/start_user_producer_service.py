@@ -13,7 +13,7 @@ def run():
     subprocess.call(cmd, shell=True)
     """
 
-    cmd = "docker run --restart=always -v /tmp:/tmp -e KAFKA_BROKER_SERVER="+params['external_ip']+" -e KAFKA_TOPICS=jobs --name producer-jobs registry.cn-shanghai.aliyuncs.com/wangxb/kafka-producer:v1"
+    cmd = "docker run --restart=always -v /tmp:/tmp -e KAFKA_BROKER_SERVER="+params['server_ip']+" -e KAFKA_TOPICS=jobs --name producer-jobs registry.cn-shanghai.aliyuncs.com/wangxb/kafka-producer:v1"
     cmd = cmd.split(' ')
     subprocess.Popen(cmd)
 
