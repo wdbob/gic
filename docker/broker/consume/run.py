@@ -44,7 +44,10 @@ def run():
         for p in pros:
             if (p=='jobs'):
                 if not job_process.is_alive():
-                    job_process.start()
+                    try:
+                        job_process.start()
+                    except Exception as e:
+                        print(e)
 
             elif(p=='status'):
                 pass

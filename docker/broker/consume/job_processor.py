@@ -59,13 +59,11 @@ class Processor:
                 return False
         return True
 
+
     def _write_command(self, job):
         write_path = '/tmp/command_out'
-        #global job_id
         if os.path.exists(write_path):
-            #job['job_id'] = job_id
-            message = json.dumps(job)
-            message += '\n'
+            message = job.as_command
             # set job
             try:
                 f = os.open(write_path, os.O_WRONLY)
@@ -74,7 +72,6 @@ class Processor:
             except Exception as e:
                 print(e)
                 os.close(f)
-
         else:
             print("主题为command的生产者服务没有启动，请先启动生产者服务")
         
@@ -87,8 +84,11 @@ class Processor:
         pass
 
 class Job:
+    job_id = 0
     def __init__(self, info_str, info=None):
         self.job = self._get_job_info(info_str)
+        self.job_id = Job.job_id
+        Job.job_id += 1
         if info is not None:
             self.job = info
 
@@ -103,7 +103,6 @@ class Job:
         required_keys = ['username', 
             'git_url', 
             'entrypoint',
-            'calculator_ip',
             'key',
             'secret',
             'instance_id',
@@ -122,6 +121,21 @@ class Job:
         if 'email' in self.job.keys():
             return True
         return False
+
+    @property
+    def as_command(self):
+        command = {}
+        command['git_url'] = self.job['git_url']
+        command['job_id'] = self.job_id
+        command['entrypoint'] = self.job['entrypoint']
+        if 'log' in self.job.keys():
+            command['log'] = self.job['log']
+        if 'output' in self.job.keys():
+            command['output'] = self.job['output']
+        command['username'] = self.job['username']
+        command = json.dumps(command)
+        command += '\n'
+        return command
 
     @property
     def email(self):
@@ -147,7 +161,6 @@ def send_email(email, subject, params, content='submit_failure', job_name=""):
     #发送邮箱用户/密码  
     mail_username =  params['proc_email_username'] 
     mail_password = params['proc_email_password']  
-    print(mail_from, mail_smtpserver, mail_username, mail_password)
 
     mail_to = email
      #创建一个带附件的邮件实例（内容） ent_tmp 
