@@ -49,7 +49,6 @@ class Processor:
         required_keys = ['username', 
             'git_url', 
             'entrypoint',
-            'calculator_ip',
             'key',
             'secret',
             'instance_id',
@@ -75,12 +74,33 @@ class Processor:
         else:
             print("主题为command的生产者服务没有启动，请先启动生产者服务")
         
+    """
     def process(self, msg):
         self.jobs = self._parse(msg)
         for job in self.jobs:
             self._write_command(job)
+    """
+    def process(self, job, runner_status):
+        sub = u'来自GPU集群管理系统的消息'
+        if not job.is_valid() and job.has_email():
+            send_email(job.email, sub, self.params, 'submit_failure', job.name)
+        elif job.is_valid():
+            print(job.job, runner_status)
 
-    def _start_calculator(self):
+    def check_job(self, job):
+        sub = u'来自GPU集群管理系统的消息'
+        if not job.is_valid() and job.has_email():
+            send_email(job.email, sub, self.params, 'submit_failure', job.name)
+            return False
+        if job.is_valid():
+            return True
+        else:
+            return False
+    
+    def connect(self, job):
+        pass
+
+    def _start_runner(self):
         pass
 
 class Job:
@@ -118,24 +138,33 @@ class Job:
         return self._is_intact(self.job)
     
     def has_email(self):
-        if 'email' in self.job.keys():
-            return True
-        return False
+        try:
+            if 'email' in self.job.keys():
+                return True
+            return False
+        except:
+            return False
 
     @property
     def as_command(self):
-        command = {}
-        command['git_url'] = self.job['git_url']
-        command['job_id'] = self.job_id
-        command['entrypoint'] = self.job['entrypoint']
+        command = {
+            "git_url": self.job['git_url'],
+            "job_id": self.job_id,
+            "entrypoint": self.job['entrypoint'],
+            "username": self.job['username'],
+        }
         if 'log' in self.job.keys():
             command['log'] = self.job['log']
         if 'output' in self.job.keys():
             command['output'] = self.job['output']
-        command['username'] = self.job['username']
+
         command = json.dumps(command)
         command += '\n'
         return command
+
+    @property
+    def runner_id(self):
+        return self.job['instance_id']
 
     @property
     def email(self):
@@ -150,6 +179,11 @@ class Job:
             return self.job['job_name']
         except:
             return None
+
+
+class RunerController:
+    def __init__(self):
+        pass
 
 def send_email(email, subject, params, content='submit_failure', job_name=""):
     #发送邮箱  
