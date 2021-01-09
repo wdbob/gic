@@ -5,7 +5,7 @@ import time
 import signal
 from multiprocessing import Process, Queue
 
-from job_processor import Processor, Job
+from job_processor import Processor, Job, send_failure
 
 # process jobs from user, and send command to runner
 def process_jobs(process, q):
@@ -34,15 +34,16 @@ def run():
     topics = env_dict['KAFKA_TOPICS']
     topics = topics.split(',')
 
-    processor_params = {}
-    processor_params['proc_email'] = env_dict['EMAIL']
-    processor_params['proc_smtpserver'] = env_dict['SMTPSERVER']
-    processor_params['proc_email_username'] = env_dict['EMAIL']
-    processor_params['proc_email_password'] = env_dict['EMAIL_PASSWORD']
+    email_params = {}
+    email_params['proc_email'] = env_dict['EMAIL']
+    email_params['proc_smtpserver'] = env_dict['SMTPSERVER']
+    email_params['proc_email_username'] = env_dict['EMAIL']
+    email_params['proc_email_password'] = env_dict['EMAIL_PASSWORD']
     
-    processor = Processor(processor_params)
+    #processor = Processor(processor_params)
     pros = {}
-    all_job = []
+    processor_list = {}
+    all_jobs = {}
     runner_job_list = {}
     runner_status_list = {}
     q_jobs = Queue()
@@ -74,19 +75,35 @@ def run():
                         status_process.start()
                     except Exception as e:
                         print(e)
+
         if not q_jobs.empty():
             job = Job(q_jobs.get())
-            if processor.check_job(job):
+            if job.is_valid():
+                # need to start a new runner
                 if job.runner_id not in runner_status_list.keys():
-                    runner_status_list[job.runner_id] = "NOT_CONNECTED"
+                    status = {
+                        "status": "UNKNOWN",
+                        "job_id": None,
+                        "instance_id": None,
+                        "note": None
+                    }
+                    runner_status_list[job.runner_id] = status
                     runner_job_list[job.runner_id] = []
+                processor = Processor()
+                processor_list[job.job_id] = processor
+                
                 """
                 if (runner_status_list[job.runner_id] == "NOT_CONNECTED"):
                     processor.connect(job)
                 elif (runner_status_list[job.runner_id] == "FREE"):
                     pass
                 """
-                processor.process(job, runner_status_list[job.runner_id])
+                processor.process(job, runner_status_list[job.runner_id], email_params)
+                runner_job_list[job.runner_id].append(job)
+                all_jobs[job.job_id] = job
+            else:
+                send_failure(job, email_params)
+
         if not q_status.empty():
             print(q_status.get())
         time.sleep(1)

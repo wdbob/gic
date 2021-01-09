@@ -8,9 +8,9 @@ import time
 
 
 class Processor:
-    def __init__(self):
+    def __init__(self, instance_id):
         self.connected = False
-        self.instance_id = None
+        self.instance_id = instance_id
         self.status = 'NOT_CONNECTED'
         self.query_proc = None
     
@@ -25,9 +25,11 @@ class Processor:
                 if(m==''): continue
                 try:
                     command = Command(m)
-                    ret.append(command)
+                    if command.instance_id==self.instance_id:
+                        ret.append(command)
                 except Exception as e:
                     print(e)
+                    ret = []
                     break
         return ret
 
@@ -71,9 +73,9 @@ class Processor:
                 self.status = "JOB_FAILED"
                 self.send_status_to_broker(self.status, command, str(e))
 
-        if command.info not in ["ping"]:
-            if (self.status not in ["NOT_CONNECTED"]):
-                self.send_finish_until_response(command)
+            if command.info not in ["ping"]:
+                if (self.status not in ["NOT_CONNECTED"]):
+                    self.send_finish_until_response(command)
 
     # TODO: write it as a thread
     def send_finish_until_response(self, command, threshold=3):
@@ -158,6 +160,10 @@ class Command:
         except:
             info = None
         return info
+
+    @property
+    def instance_id(self):
+        return self.command['instance_id']
 
     @property
     # ping or NULL

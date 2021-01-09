@@ -6,6 +6,7 @@ from command_processor import Processor
 def run():
     env_dict = os.environ
     broker_server = env_dict['KAFKA_BROKER_SERVER']
+    instance_id = env_dict['INSTANCE_ID']
 
     # start consumer with topic command
     cmd = "docker stop consumer-command"
@@ -32,7 +33,7 @@ def run():
     subprocess.Popen(cmd)
     time.sleep(10)
 
-    command_processor = Processor()
+    command_processor = Processor(instance_id)
 
     while True:
         output = p_consumer_command.stdout.readline()

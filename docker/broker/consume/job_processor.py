@@ -2,21 +2,28 @@
 # -*- coding: utf-8 -*-
 
 import json
+from multiprocessing import Process
 import smtplib  
 from email.mime.text import MIMEText  
 from email.mime.multipart import MIMEMultipart  
 from email.header import Header  
 import os,time,re  
+from instance_controller import InstanceController
 
 class Processor:
-    def __init__(self, params=None):
+    def __init__(self):
+        """
         if params is None:
             json_fn = os.path.join(os.path.dirname(__file__), 'mq_config.json')
             with open(json_fn, 'r') as f:
                 self.params = json.load(f)
         else:
             self.params = params
+        """
+        self.ping_proc = None
+        pass
 
+    """
     def _parse(self, msg):
         sub = u'来自GPU集群管理系统的消息'
         ret = []
@@ -40,6 +47,7 @@ class Processor:
                     print('读取job配置信息失败!', e)
                     break
         return ret
+    """
             
     def _get_job_info(self, info_str):
         info = json.loads(info_str)
@@ -58,8 +66,7 @@ class Processor:
                 return False
         return True
 
-
-    def _write_command(self, job):
+    def _write_command(self, command):
         write_path = '/tmp/command_out'
         if os.path.exists(write_path):
             message = job.as_command
@@ -73,6 +80,19 @@ class Processor:
                 os.close(f)
         else:
             print("主题为command的生产者服务没有启动，请先启动生产者服务")
+
+    def _send_command(self, job):
+        job['info'] = "command"
+        self._write_command(job)
+        
+
+    def _send_ping(self, job):
+        job['info'] = "ping"
+        self._write_command(job)
+
+    def _send_ok(self, job):
+        job['info'] = "ok"
+        self._write_command(job)
         
     """
     def process(self, msg):
@@ -80,28 +100,47 @@ class Processor:
         for job in self.jobs:
             self._write_command(job)
     """
-    def process(self, job, runner_status):
+    def process(self, job, runner_status, email_params):
         sub = u'来自GPU集群管理系统的消息'
+        status = runner_status['status']
         if not job.is_valid() and job.has_email():
-            send_email(job.email, sub, self.params, 'submit_failure', job.name)
+            send_email(job.email, sub, email_params, 'submit_failure', job.name)
         elif job.is_valid():
+            runner_controller = InstanceController(job.secret, job.key, job.runner_id)
             print(job.job, runner_status)
+            if (status=="UNKNOWN"):
+                status = runner_controller.get_status()
+            if (status=="STOPPED"):
+                runner_controller.start()
+                self.connect(job, runner_status)
+            elif (status=="NOT_CONNECTED"):
+                self.connect(job, runner_status)
+            elif (status=="FREE"):
+                if self.ping_proc is not None:
+                    self.ping_proc.terminate()
+                    self.ping_proc = None
+                self._send_command(job)
+            elif (status=="FINISHED"):
+                self._send_ok(job)
+            elif (status=="JOB_FAILED"):
+                # TODO
+                send_failure(job, email_params)
 
-    def check_job(self, job):
+    def connect(self, job, status, threshold=3):
+        def query():
+            while True:
+                self._send_ping(job)
+                time.sleep(threshold)
+
+        if self.ping_proc is None:
+            self.ping_proc = Process(target=query)
+            self.ping_proc.start()
+
+
+def send_failure(job, params):
+    if job.has_email():
         sub = u'来自GPU集群管理系统的消息'
-        if not job.is_valid() and job.has_email():
-            send_email(job.email, sub, self.params, 'submit_failure', job.name)
-            return False
-        if job.is_valid():
-            return True
-        else:
-            return False
-    
-    def connect(self, job):
-        pass
-
-    def _start_runner(self):
-        pass
+        send_email(job.email, sub, params, 'submit_failure', job.name)
 
 class Job:
     job_id = 0
@@ -165,6 +204,14 @@ class Job:
     @property
     def runner_id(self):
         return self.job['instance_id']
+    
+    @property
+    def secret(self):
+        return self.job['secret']
+
+    @property
+    def key(self):
+        return self.job['key']
 
     @property
     def email(self):
@@ -181,11 +228,7 @@ class Job:
             return None
 
 
-class RunerController:
-    def __init__(self):
-        pass
-
-def send_email(email, subject, params, content='submit_failure', job_name=""):
+def send_email(email, subject, params, content='submit_failure', job_name="", text=None):
     #发送邮箱  
     mail_from = params['proc_email']  
     #发送邮件主题  
@@ -202,14 +245,14 @@ def send_email(email, subject, params, content='submit_failure', job_name=""):
     msg = MIMEMultipart()  
     #将读取到的测试报告的数据以html形式显示为邮件的中文  
     if (content=='submit_failure'):
-        msgTest=MIMEText(u"<html><h1>你的任务("+job_name+u")提交失败了！！"  
+        msgTest=MIMEText(u"<html><h1>你的任务【"+job_name+u"】提交失败了！！"  
                         u'''<p>请查看你的任务配置文件'''  
                         ,'html','utf-8')  
     elif(content=='submit_succeed'):
-        content_tmp = u"<html><h1>你的任务("+job_name+u")提交成功！！<p>GPU 服务器即将处理任务"
+        content_tmp = u"<html><h1>你的任务【"+job_name+u"】提交成功！！<p>GPU 服务器即将处理任务"
         msgTest=MIMEText(content_tmp, 'html', 'utf-8')
     else:
-        msgTest=MIMEText(u'''<html><h1>你的任务('''+job_name+u''')提交成功！！'''
+        msgTest=MIMEText(u'''<html><h1>你的任务【'''+job_name+u'''】提交成功！！'''
                         u'''<p>GPU 服务器即将处理任务'''
                         , 'html', 'utf-8')
     msg.attach(msgTest)  
@@ -232,6 +275,16 @@ def send_email(email, subject, params, content='submit_failure', job_name=""):
 
 
 if __name__ == "__main__":
+    env_dict = os.environ
+    broker_server = env_dict['KAFKA_BROKER_SERVER']
+    topics = env_dict['KAFKA_TOPICS']
+    topics = topics.split(',')
+
+    processor_params = {}
+    processor_params['proc_email'] = env_dict['EMAIL']
+    processor_params['proc_smtpserver'] = env_dict['SMTPSERVER']
+    processor_params['proc_email_username'] = env_dict['EMAIL']
+    processor_params['proc_email_password'] = env_dict['EMAIL_PASSWORD']
     #send_email('xingbo.wang@winndoo.com', 'test')
     message = {
         "username": "wangxb",
@@ -246,5 +299,5 @@ if __name__ == "__main__":
         "log": "test.log"
     }
     message = json.dumps(message)
+    job = Job(message)
     processor = Processor()
-    processor.process(message)

@@ -22,7 +22,7 @@ def run():
         params = json.load(f)
 
     cmd = "docker run --restart=always -v /tmp:/tmp -v /workspace:/workspace -e KAFKA_BROKER_SERVER=" \
-        +params['server_ip']+ \
+        +params['server_ip']+ " -e INSTANCE_ID="+params['instance_id']+\
         " -v /var/run/docker.sock:/var/run/docker.sock --name runner-dind registry.cn-shanghai.aliyuncs.com/wangxb/dind-runner:v1"
     cmd = cmd.split(' ')
     subprocess.Popen(cmd)
