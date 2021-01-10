@@ -13,6 +13,7 @@ class Processor:
         self.instance_id = instance_id
         self.status = 'NOT_CONNECTED'
         self.query_proc = None
+        self.command_list = {}
     
     def _parse(self, msg):
         ret = []
@@ -34,41 +35,53 @@ class Processor:
         return ret
 
     def _exec(self, command):
+        """
         is_connected = self.check_connection(command)
         if is_connected:
-            if (command.info=="command"):
-                if not os.path.exists('/workspace'):
-                    cmd = "mkdir /workspace"
-                    subprocess.call(cmd, shell=True)
-                namespace_path = os.path.join('/workspace', command.username)
-                if not os.path.exists(namespace_path):
-                    cmd = "mkdir "+namespace_path
-                    subprocess.call(cmd, shell=True)
-                workspace_path = os.path.join(namespace_path, command.project_name)
-                if os.path.exists(workspace_path):
-                    cmd = "cd " + workspace_path +" && git pull"
-                    subprocess.call(cmd, shell=True)
-                else:
-                    cmd = "cd "+namespace_path +" && git clone "+ command.git_url
-                    subprocess.call(cmd, shell=True)
+        """
+        if (command.info=="command"):
+            self.status = "RUNNING"
+            self.send_status_to_broker(self.status, command)
 
-                # exec entrypoint
-                cmd = "cd "+workspace_path+" && "+command.entrypoint
-                self.status = "RUNNING"
-                self.send_status_to_broker(self.status, command)
-                # TODO: check if job failed
-                ret_code = subprocess.call(cmd, shell=True)
-                if ret_code:
-                    print(ret_code)
-                    raise "Job failed"
-                self.status = "FINISHED_AND_RUNNING"
-                self.send_status_to_broker(self.status, command)
+            if not os.path.exists('/workspace'):
+                cmd = "mkdir /workspace"
+                subprocess.call(cmd, shell=True)
+            namespace_path = os.path.join('/workspace', command.username)
+            if not os.path.exists(namespace_path):
+                cmd = "mkdir "+namespace_path
+                subprocess.call(cmd, shell=True)
+            workspace_path = os.path.join(namespace_path, command.project_name)
+            if os.path.exists(workspace_path):
+                cmd = "cd " + workspace_path +" && git pull"
+                subprocess.call(cmd, shell=True)
+            else:
+                cmd = "cd "+namespace_path +" && git clone "+ command.git_url
+                subprocess.call(cmd, shell=True)
+
+            # exec entrypoint
+            cmd = "cd "+workspace_path+" && "+command.entrypoint
+            
+            ret_code = subprocess.call(cmd, shell=True)
+            if ret_code:
+                print(ret_code)
+                raise "Job failed"
+            self.status = "FINISHED_AND_RUNNING"
+            self.send_status_to_broker(self.status, command)
 
     def process(self, msg):
         self.commands = self._parse(msg)
         for command in self.commands:
             try:
-                self._exec(command)
+                is_connected = self.check_connection(command)
+                if is_connected:
+                    if command.job_id not in self.command_list.keys():
+                        self.command_list[command.job_id] = command
+                        self._exec(command)
+                    elif command.job_id:
+                        tmp = self.status
+                        self.status = "FINISHED_AND_RUNNING"
+                        self.send_status_to_broker(self.status, command)
+                        self.status = tmp
             except Exception as e:
                 self.status = "JOB_FAILED"
                 self.send_status_to_broker(self.status, command, str(e))
@@ -83,7 +96,7 @@ class Processor:
         def query():
             while True:
                 self.status = "FINISHED"
-                self.send_status_to_broker(self.status, None)
+                self.send_status_to_broker(self.status, command)
                 time.sleep(threshold)
 
         if self.query_proc is None:
@@ -94,21 +107,21 @@ class Processor:
             self.query_proc.terminate()
             self.query_proc = None
             self.status = "FREE"
-            self.send_status_to_broker(self.status, None)
+            self.send_status_to_broker(self.status, command)
 
     def check_connection(self, command):
         if command.info=='ping':
             self.connected = True
             self.id = self.instance_id
             self.status = "FREE"
-            self.send_status_to_broker(self.status, None)
+            self.send_status_to_broker(self.status, command)
             return False
         elif self.connected==True:
             return True
         else:
             self.connected = False
             self.status = "NOT_CONNECTED"
-            self.send_status_to_broker(self.status, None)
+            self.send_status_to_broker(self.status, command)
             return False
     
     def send_status_to_broker(self, status, command, note=None):
