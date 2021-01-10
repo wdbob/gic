@@ -5,6 +5,7 @@ import os
 import subprocess
 from multiprocessing import Process
 import time
+import codecs
 
 
 class Processor:
@@ -60,13 +61,30 @@ class Processor:
 
             # exec entrypoint
             cmd = "cd "+workspace_path+" && "+command.entrypoint
-            
+            if command.output and command.output=="default":
+                output = os.path.join('/tmp', command.project_name+"_output.txt")
+                cmd += " > "+output
+                command.set_output(output)
+
             ret_code = subprocess.call(cmd, shell=True)
+            note = {
+                "output": None,
+                "log": None
+            }
+            if command.output:
+                with codecs.open(command.output, 'r', "utf-8") as f:
+                    output = f.read(1024*512)
+                    note['output'] = output
+            if command.log:
+                with codecs.open(os.path.join(workspace_path, command.log), 'r', 'utf-8') as f:
+                    log = f.read(1024*512)
+                    note['log'] = log
+
             if ret_code:
                 print(ret_code)
                 raise "Job failed"
             self.status = "FINISHED_AND_RUNNING"
-            self.send_status_to_broker(self.status, command)
+            self.send_status_to_broker(self.status, command, note)
 
     def process(self, msg):
         self.commands = self._parse(msg)
@@ -161,6 +179,7 @@ class Processor:
 
 
 
+
 class Command:
     def __init__(self, command_str, info=None):
         self.command = self._get_command_info(command_str)
@@ -173,6 +192,9 @@ class Command:
         except:
             info = None
         return info
+
+    def set_output(self, output):
+        self.command['output'] = output
 
     @property
     def instance_id(self):

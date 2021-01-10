@@ -15,6 +15,7 @@ class Processor:
         self.ping_proc = None
         self.sent_running_email = False
         self.sent_submit_email = False
+        self.send_finish_email = False
             
     def _get_job_info(self, info_str):
         info = json.loads(info_str)
@@ -102,6 +103,13 @@ class Processor:
                 send_failure(job, email_params)
                 return True
             elif (status=="FINISHED_AND_RUNNING"):
+                if not self.send_finish_email:
+                    note = runner_status['note']
+                    if note:
+                        send_email(job.email, sub, email_params, 'finish', job.name, note)
+                    else:
+                        send_email(job.email, sub, email_params, 'finish', job.name)
+                    self.send_finish_email = True
                 return True
         return False
 
@@ -247,7 +255,7 @@ class Job:
             return None
 
 
-def send_email(email, subject, params, content='submit_failure', job_name="", text=None):
+def send_email(email, subject, params, content='submit_failure', job_name="", note=None):
     #发送邮箱  
     mail_from = params['proc_email']  
     #发送邮件主题  
@@ -268,16 +276,37 @@ def send_email(email, subject, params, content='submit_failure', job_name="", te
                         u'''<p>请查看你的任务配置文件'''  
                         ,'html','utf-8')  
     elif(content=='submit_succeed'):
-        content_tmp = u"<html><h1>你的任务【"+job_name+u"】提交成功！！<p>GPU 服务器即将处理任务"
+        content_tmp = u"<html><h1>你的任务【"+job_name+u"】提交成功！！<p>GPU 服务器即将处理任务。"
         msgTest=MIMEText(content_tmp, 'html', 'utf-8')
     elif(content=='running'):
-        content_tmp = u"<html><h1>你的任务【"+job_name+u"】正在执行！！<p>GPU 服务器正在处理任务"
+        content_tmp = u"<html><h1>你的任务【"+job_name+u"】正在执行！！<p>GPU 服务器正在处理任务。"
+        msgTest=MIMEText(content_tmp, 'html', 'utf-8')
+    elif(content=='finish'):
+        content_tmp = u"<html><h1>你的任务【"+job_name+u"】完成了！！<p>日志和输出文件保存在附件中。"
         msgTest=MIMEText(content_tmp, 'html', 'utf-8')
     else:
         msgTest=MIMEText(u'''<html><h1>你的任务【'''+job_name+u'''】提交成功！！'''
                         u'''<p>GPU 服务器即将处理任务'''
                         , 'html', 'utf-8')
     msg.attach(msgTest)  
+
+    if note:
+        output = note['output']
+        log = note['log']
+        name = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+        if output:
+            output = output.encode()
+            output = MIMEText(output, 'base64', 'utf-8')
+            output["Content-Type"] = 'application/octet-stream'
+            output["Content-Disposition"] ='attachment; filename="'+name+'.output"'
+            msg.attach(output)
+        if log:
+            log = log.encode()
+            log = MIMEText(log, 'base64', 'utf-8')
+            log["Content-Type"] = 'application/octet-stream'
+            log["Content-Disposition"] ='attachment; filename="'+name+'.log"'
+            msg.attach(log)
+
     #定义邮件的附件  
     #att1 = MIMEText(open(file_new, 'rb').read(), 'base64', 'utf-8')  
     #att1["Content-Type"] = 'application/octet-stream'  

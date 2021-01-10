@@ -141,7 +141,7 @@ def run():
                 now = time.time()
                 if runner in clock_list.keys():
                     diff = now-clock_list[runner]
-                    if (diff>30):
+                    if (diff>300):
                         ctl = runner_controller_list[runner]
                         ctl.stop()
                         del clock_list[runner]
