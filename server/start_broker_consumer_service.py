@@ -22,7 +22,7 @@ def run():
         " -e SMTPSERVER="+ params['proc_smtpserver'] + " -e EMAIL_PASSWORD="+ \
         params['proc_email_password'] + \
         " -v /tmp:/tmp -v " +ssh_dir + \
-        ":/root/.ssh/gic wangxb/kafka-broker-consumer:v1"
+        ":/root/.ssh/gic registry.cn-shanghai.aliyuncs.com/wangxb/kafka-broker-consumer:v1"
     cmd = cmd.split(' ')
     subprocess.Popen(cmd)
 
