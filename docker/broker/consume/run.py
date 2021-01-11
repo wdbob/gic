@@ -4,17 +4,22 @@ import subprocess
 import time
 import signal
 from multiprocessing import Process, Queue
+from base64 import b64decode
 
 from job_processor import Processor, Job, send_failure
 from instance_controller import InstanceController
+from decrypt import decrypt_long
 
 # process jobs from user, and send command to runner
 def process_jobs(process, q):
     output = process.stdout
+    ssh_dir = os.path.join('/root', '.ssh', 'gic')
     for line in iter(output.readline, ''):
         if line:
-            line = line.decode()
-            q.put(line.strip())
+            line = line.decode().strip()
+            line = b64decode(line)
+            line = decrypt_long(line, ssh_dir)
+            q.put(line)
         """
         line = bytes.decode(line)
         if (line is not None and line!=''):
@@ -41,7 +46,6 @@ def run():
     email_params['proc_email_username'] = env_dict['EMAIL']
     email_params['proc_email_password'] = env_dict['EMAIL_PASSWORD']
     
-    #processor = Processor(processor_params)
     pros = {}
     processor_list = {}
     all_jobs = {}
@@ -135,8 +139,8 @@ def run():
         # shut down the runner, which is free more than 300s
         for runner in runner_status_list:
             status = runner_status_list[runner]
-            print('------- shut down')
-            print(runner, status)
+            #print('------- shut down')
+            #print(runner, status)
             if (status['status']=='FREE'):
                 now = time.time()
                 if runner in clock_list.keys():

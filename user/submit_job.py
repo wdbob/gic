@@ -4,6 +4,8 @@
 import json
 import os
 from argparse import ArgumentParser
+from encrypt import encrypt_long
+from base64 import b64encode, b64decode
 
 
 def run():
@@ -18,12 +20,18 @@ def run():
     with open(json_fn, 'r') as f:
         params = json.load(f)
     message = json.dumps(params)
+
+    home = os.path.expanduser('~')
+    ssh_dir = os.path.join(home, '.ssh')
+    message = encrypt_long(message, ssh_dir)
+    message = b64encode(message).decode('ascii')
     message += '\n'
+    message = message.encode()
 
     # set job
     try:
         f = os.open(write_path, os.O_WRONLY)
-        os.write(f, message.encode())
+        os.write(f, message)
         os.close(f)
     except Exception as e:
         print(e)

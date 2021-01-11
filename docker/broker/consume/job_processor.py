@@ -39,9 +39,7 @@ class Processor:
         write_path = '/tmp/command_out'
         if os.path.exists(write_path):
             message = job.as_command
-            print('send-------')
-            print(message)
-            print('send-------')
+            #print(message)
             # set job
             try:
                 f = os.open(write_path, os.O_WRONLY)
