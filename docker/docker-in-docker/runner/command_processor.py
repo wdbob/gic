@@ -81,19 +81,28 @@ class Processor:
                 "log": None
             }
             if command.output:
-                with codecs.open(command.output, 'r', "utf-8") as f:
+                with codecs.open(command.output, 'rb', "utf-8") as f:
+                    try:
+                        f.seek(-1024*512)
+                    except:
+                        pass
                     output = f.read(1024*512)
-                    note['output'] = output
+                    note['output'] = output.decode()
             if command.log:
-                with codecs.open(os.path.join(workspace_path, command.log), 'r', 'utf-8') as f:
+                with codecs.open(os.path.join(workspace_path, command.log), 'rb', 'utf-8') as f:
+                    try:
+                        f.seek(-1024*512)
+                    except:
+                        pass
                     log = f.read(1024*512)
-                    note['log'] = log
+                    note['log'] = log.decode()
 
             if ret_code:
-                #print(ret_code)
-                raise "Job failed"
-            self.status = "FINISHED_AND_RUNNING"
-            self.send_status_to_broker(self.status, command, note)
+                self.status = "JOB_FAILED"
+                self.send_status_to_broker(self.status, command, note)
+            else:
+                self.status = "FINISHED_AND_RUNNING"
+                self.send_status_to_broker(self.status, command, note)
 
     def process(self, msg):
         self.commands = self._parse(msg)
@@ -111,8 +120,12 @@ class Processor:
                         self.send_status_to_broker(self.status, command)
                         self.status = tmp
             except Exception as e:
-                self.status = "JOB_FAILED"
-                self.send_status_to_broker(self.status, command, str(e))
+                self.status = "INNER_ERROR"
+                note = {
+                    "message": "inner error, please contact the maintainer",
+                    "error": str(e)
+                }
+                self.send_status_to_broker(self.status, command, note)
 
             if command.info not in ["ping"]:
                 if (self.status not in ["NOT_CONNECTED"]):

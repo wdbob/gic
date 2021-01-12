@@ -99,9 +99,11 @@ class Processor:
             elif (status=="FINISHED"):
                 self._send_ok(job)
             elif (status=="JOB_FAILED"):
-                # TODO
-                send_running_failure(job, email_params)
+                note = runner_status['note']
+                send_running_failure(job, email_params, note)
                 return True
+            elif (status=="INNER_ERROR"):
+                send_inner_error(job, email_params)
             elif (status=="FINISHED_AND_RUNNING"):
                 if not self.send_finish_email:
                     note = runner_status['note']
@@ -138,10 +140,15 @@ def send_failure(job, params):
         sub = u'来自GPU集群管理系统的消息'
         send_email(job.email, sub, params, 'submit_failure', job.name)
 
-def send_running_failure(job, params):
+def send_running_failure(job, params, note=None):
     if job.has_email():
         sub = u'来自GPU集群管理系统的消息'
-        send_email(job.email, sub, params, 'running_failure', job.name)
+        send_email(job.email, sub, params, 'running_failure', job.name, note)
+
+def send_inner_error(job, params):
+    if job.has_email():
+        sub = u'来自GPU集群管理系统的消息'
+        send_email(job.email, sub, params, 'inner_error', job.name)
 
 class Job:
     job_id = 0
@@ -306,6 +313,11 @@ def send_email(email, subject, params, content='submit_failure', job_name="", no
     elif(content=='running_failure'):
         msgTest=MIMEText(u"<html><h1>你的任务【"+job_name+u"】执行失败了！！"  
                         u'''<p>请查看你的代码和输出记录'''  
+                        ,'html','utf-8')
+    elif(content=='inner_error'):
+        msgTest=MIMEText(u"<html><h1>你的任务【"+job_name+u"】执行执行时发生错误"  
+                        u'''<p>这可能是你的配置问题，也可能是系统bug'''  
+                        u'''<p>系统维护者的邮箱是xingbo.wang@winndoo.com'''
                         ,'html','utf-8')
     else:
         msgTest=MIMEText(u'''<html><h1>你的任务【'''+job_name+u'''】提交成功！！'''
