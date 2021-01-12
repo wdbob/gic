@@ -87,7 +87,7 @@ class Processor:
                     except:
                         pass
                     output = f.read(1024*512)
-                    note['output'] = output.decode()
+                    note['output'] = output
             if command.log:
                 with codecs.open(os.path.join(workspace_path, command.log), 'rb', 'utf-8') as f:
                     try:
@@ -95,7 +95,8 @@ class Processor:
                     except:
                         pass
                     log = f.read(1024*512)
-                    note['log'] = log.decode()
+                    print('type of log', type(log))
+                    note['log'] = log
 
             if ret_code:
                 self.status = "JOB_FAILED"
