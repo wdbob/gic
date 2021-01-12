@@ -6,7 +6,7 @@ import signal
 from multiprocessing import Process, Queue
 from base64 import b64decode
 
-from job_processor import Processor, Job, send_failure
+from job_processor import Processor, Job, send_failure, send_email
 from instance_controller import InstanceController
 from decrypt import decrypt_long
 
@@ -97,6 +97,9 @@ def run():
                         "instance_id": job.runner_id,
                         "note": None
                 }
+                if job.email:
+                    sub = u'来自GPU集群管理系统的消息'
+                    send_email(job.email, sub, email_params, 'submit_succeed', job.name)
                 runner_status_list[job.runner_id] = status
                 if job.runner_id not in runner_job_list.keys():
                     runner_job_list[job.runner_id] = {}

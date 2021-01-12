@@ -87,9 +87,11 @@ class Processor:
 
             if (status=="FREE"):
                 self._send_command(job)
+                """
                 if not self.sent_submit_email:
                     send_email(job.email, sub, email_params, 'submit_succeed', job.name)
                     self.sent_submit_email = True
+                """
             elif (status=="RUNNING"):
                 if not self.sent_running_email:
                     send_email(job.email, sub, email_params, 'running', job.name)
@@ -303,7 +305,7 @@ def send_email(email, subject, params, content='submit_failure', job_name="", no
         msgTest=MIMEText(content_tmp, 'html', 'utf-8')
     elif(content=='running_failure'):
         msgTest=MIMEText(u"<html><h1>你的任务【"+job_name+u"】执行失败了！！"  
-                        u'''<p>请查看你的任务配置文件'''  
+                        u'''<p>请查看你的代码和输出记录'''  
                         ,'html','utf-8')
     else:
         msgTest=MIMEText(u'''<html><h1>你的任务【'''+job_name+u'''】提交成功！！'''
