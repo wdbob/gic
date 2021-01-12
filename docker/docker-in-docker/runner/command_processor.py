@@ -52,6 +52,8 @@ class Processor:
                 cmd = "mkdir "+namespace_path
                 subprocess.call(cmd, shell=True)
             workspace_path = os.path.join(namespace_path, command.project_name)
+            
+                    
             if os.path.exists(workspace_path):
                 cmd = "cd " + workspace_path +" && git pull"
                 subprocess.call(cmd, shell=True)
@@ -60,7 +62,14 @@ class Processor:
                 subprocess.call(cmd, shell=True)
 
             # exec entrypoint
-            cmd = "cd "+workspace_path+" && "+command.entrypoint
+            if command.gpu_version:
+                common = "docker run --rm --runtime=nvidia -v /dev/nvidia0:/dev/nvidia0 -v /tmp:/tmp -v /workspace:/workspace -w " +\
+                    workspace_path
+                if command.gpu_version=="tensorflow-1.14.0":
+                    image = " registry.cn-shanghai.aliyuncs.com/wangxb/tensorflow:1.14.0-gpu-py3-bert4keras "
+                cmd = common + image + command.language +' ' + command.entrypoint
+            else:
+                cmd = "cd "+workspace_path+" && "+command.language+' '+command.entrypoint
             if command.output and command.output=="default":
                 output = os.path.join('/tmp', command.project_name+"_output.txt")
                 cmd += " > "+output
@@ -81,7 +90,7 @@ class Processor:
                     note['log'] = log
 
             if ret_code:
-                print(ret_code)
+                #print(ret_code)
                 raise "Job failed"
             self.status = "FINISHED_AND_RUNNING"
             self.send_status_to_broker(self.status, command, note)
@@ -94,6 +103,7 @@ class Processor:
                 if is_connected:
                     if command.job_id not in self.command_list.keys():
                         self.command_list[command.job_id] = command
+                        #print(command.command)
                         self._exec(command)
                     elif command.job_id:
                         tmp = self.status
@@ -222,6 +232,10 @@ class Command:
         return self.command['entrypoint']
 
     @property
+    def language(self):
+        return self.command['language']
+
+    @property
     def job_id(self):
         return self.command['job_id']
     
@@ -236,5 +250,12 @@ class Command:
     def output(self):
         try:
             return self.command['output']
+        except:
+            return None
+
+    @property
+    def gpu_version(self):
+        try:
+            return self.command['gpu_version']
         except:
             return None

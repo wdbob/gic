@@ -98,7 +98,7 @@ class Processor:
                 self._send_ok(job)
             elif (status=="JOB_FAILED"):
                 # TODO
-                send_failure(job, email_params)
+                send_running_failure(job, email_params)
                 return True
             elif (status=="FINISHED_AND_RUNNING"):
                 if not self.send_finish_email:
@@ -135,6 +135,11 @@ def send_failure(job, params):
     if job.has_email():
         sub = u'来自GPU集群管理系统的消息'
         send_email(job.email, sub, params, 'submit_failure', job.name)
+
+def send_running_failure(job, params):
+    if job.has_email():
+        sub = u'来自GPU集群管理系统的消息'
+        send_email(job.email, sub, params, 'running_failure', job.name)
 
 class Job:
     job_id = 0
@@ -194,6 +199,7 @@ class Job:
             "username": None,
             "project_name": None,
             "entrypoint": None,
+            "language": None,
             "instance_id": None,
             "job_id": -1,
         }
@@ -208,12 +214,15 @@ class Job:
             "entrypoint": self.job['entrypoint'],
             "username": self.job['username'],
             "project_name": self.job['project_name'],
-            "instance_id": self.job['instance_id']
+            "instance_id": self.job['instance_id'],
+            "language": self.job['language']
         }
         if 'log' in self.job.keys():
             command['log'] = self.job['log']
         if 'output' in self.job.keys():
             command['output'] = self.job['output']
+        if 'gpu_version' in self.job.keys():
+            command['gpu_version'] = self.job['gpu_version']
 
         command = json.dumps(command)
         command += '\n'
@@ -225,6 +234,10 @@ class Job:
             return self.job['info']
         except:
             return None
+
+    @property
+    def language(self):
+        return self.job['language']
 
     @property
     def runner_id(self):
@@ -252,6 +265,12 @@ class Job:
         except:
             return None
 
+    @property
+    def gpu_version(self):
+        try:
+            return self.job['gpu_version']
+        except:
+            return None
 
 def send_email(email, subject, params, content='submit_failure', job_name="", note=None):
     #发送邮箱  
@@ -282,6 +301,10 @@ def send_email(email, subject, params, content='submit_failure', job_name="", no
     elif(content=='finish'):
         content_tmp = u"<html><h1>你的任务【"+job_name+u"】完成了！！<p>日志和输出文件保存在附件中。"
         msgTest=MIMEText(content_tmp, 'html', 'utf-8')
+    elif(content=='running_failure'):
+        msgTest=MIMEText(u"<html><h1>你的任务【"+job_name+u"】执行失败了！！"  
+                        u'''<p>请查看你的任务配置文件'''  
+                        ,'html','utf-8')
     else:
         msgTest=MIMEText(u'''<html><h1>你的任务【'''+job_name+u'''】提交成功！！'''
                         u'''<p>GPU 服务器即将处理任务'''

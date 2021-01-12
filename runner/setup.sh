@@ -16,4 +16,5 @@ tee /etc/docker/daemon.json <<EOF
 EOF && \
 systemctl daemon-reload && \
 systemctl restart docker
+mkdir $HOME/workspace
 
