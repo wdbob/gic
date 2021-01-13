@@ -72,8 +72,10 @@ class Processor:
                 cmd = "cd "+workspace_path+" && "+command.language+' '+command.entrypoint
             if command.output and command.output=="default":
                 output = os.path.join('/tmp', command.project_name+"_output.txt")
-                cmd += " > "+output
+                cmd += " > "+output +" 2>&1"
                 command.set_output(output)
+            elif command.output:
+                cmd += " > " + output +" 2>&1"
 
             ret_code = subprocess.call(cmd, shell=True)
             note = {

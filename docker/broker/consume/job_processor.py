@@ -39,7 +39,7 @@ class Processor:
         write_path = '/tmp/command_out'
         if os.path.exists(write_path):
             message = job.as_command
-            #print(message)
+            print(message)
             # set job
             try:
                 f = os.open(write_path, os.O_WRONLY)
@@ -76,7 +76,7 @@ class Processor:
                 status = runner_controller.get_status()
                 if (status=='RUNNING'):
                     status = "RUNNER_IN_ORDER"
-            if (status=="STOPPED"):
+            if (status=="STOPPED" or status=="STOPPING"):
                 runner_controller.start()
                 self.connect(job, runner_status)
             elif (status=="NOT_CONNECTED" or status=="RUNNER_IN_ORDER"):
